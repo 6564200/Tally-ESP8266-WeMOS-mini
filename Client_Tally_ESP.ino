@@ -4,7 +4,8 @@
 #include <WiFiUdp.h>
 #include "Adafruit_GFX.h"
 #include <WEMOS_Matrix_GFX.h>
-// 28 44 52 56 60
+
+
 
 
 //static const uint8_t PROGMEM
@@ -16,21 +17,16 @@
 
   
 #define NUMBER 5 //--------- number Tally
-
+static const int CAM_COD[] = {62, 30, 46, 54, 58, 60};
 #if NUMBER == 1
-   const int CODE_T = 28;
    static const uint8_t PROGMEM BMP[] = { B01111000,    B01111000,    B00011000,    B00011000,    B00011000,    B00011000,    B01111110,    B01111110 };
 #elif NUMBER == 2
-   const int CODE_T = 44;
    static const uint8_t PROGMEM BMP[] = { B11111111,    B11111111,    B00000011,    B11111111,    B11111111,    B11000000,    B11111111,    B11111111 };
 #elif NUMBER == 3
-   const int CODE_T = 52;
    static const uint8_t PROGMEM BMP[] = { B11111111,    B11111111,    B00000111,    B00111110,    B00111110,    B00000111,    B11111111,    B11111111 };
 #elif NUMBER == 4
-   const int CODE_T = 56;
    static const uint8_t PROGMEM BMP[] = { B11000011,    B11000011,    B11000011,    B11111111,    B11111111,    B00000011,    B00000011,    B00000011 };
 #elif NUMBER == 5
-   const int CODE_T = 60;
    static const uint8_t PROGMEM BMP[] = { B11111111,    B11111111,    B11000000,    B11111111,    B11111111,    B00000011,    B11111111,    B11111111 };
 #endif
 
@@ -130,9 +126,8 @@ void loop()
     
     byte myData = packetBuffer[0];
 
-    Serial.println(myData);
-// 28 44 52 56 60
-    if (myData == CODE_T) {
+//    Serial.println(myData);
+    if (myData == CAM_COD[NUMBER]) {
       
          matrix.clear();
          matrix.drawBitmap(0, 0, BMP, 8, 8, LED_ON);
