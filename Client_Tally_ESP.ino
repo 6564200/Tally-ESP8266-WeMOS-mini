@@ -6,7 +6,7 @@
 #include <WEMOS_Matrix_GFX.h>
 
 
-
+int ERR = 0;
 
 //static const uint8_t PROGMEM
 //  A_bmp[] =  { B01111000,    B01111000,    B00011000,    B00011000,    B00011000,    B00011000,    B01111110,    B01111110 },
@@ -19,15 +19,15 @@
 #define NUMBER 5 //--------- number Tally
 static const int CAM_COD[] = {62, 30, 46, 54, 58, 60};
 #if NUMBER == 1
-   static const uint8_t PROGMEM BMP[] = { B01111000,    B01111000,    B00011000,    B00011000,    B00011000,    B00011000,    B01111110,    B01111110 };
+   static const uint8_t PROGMEM BMP[] = { B00000000,    B00000011,    B00000011,    B11111111,    B11111111,    B11000011,    B11000011,    B00000000 };
 #elif NUMBER == 2
-   static const uint8_t PROGMEM BMP[] = { B11111111,    B11111111,    B00000011,    B11111111,    B11111111,    B11000000,    B11111111,    B11111111 };
+   static const uint8_t PROGMEM BMP[] = { B11111011,    B11111011,    B11011011,    B11011011,    B11011011,    B11011011,    B11011111,    B11011111 };
 #elif NUMBER == 3
-   static const uint8_t PROGMEM BMP[] = { B11111111,    B11111111,    B00000111,    B00111110,    B00111110,    B00000111,    B11111111,    B11111111 };
+   static const uint8_t PROGMEM BMP[] = { B11100111,    B11111111,    B11111111,    B11011011,    B11011011,    B11011011,    B11000011,    B11000011};
 #elif NUMBER == 4
-   static const uint8_t PROGMEM BMP[] = { B11000011,    B11000011,    B11000011,    B11111111,    B11111111,    B00000011,    B00000011,    B00000011 };
+   static const uint8_t PROGMEM BMP[] = { B11111111,    B11111111,    B00011000,    B00011000,    B00011000,    B00011000,    B11111000,    B11111000 };
 #elif NUMBER == 5
-   static const uint8_t PROGMEM BMP[] = { B11111111,    B11111111,    B11000000,    B11111111,    B11111111,    B00000011,    B11111111,    B11111111 };
+   static const uint8_t PROGMEM BMP[] = { B11011111,    B11011111,    B11011011,    B11011011,    B11011011,    B11011011,    B11111011,    B11111011 };
 #endif
 
 
@@ -68,7 +68,7 @@ void setup()
   //pinMode(test_pin, OUTPUT);
   Serial.begin(115200);
 
-  Serial.printf("Connecting to %s ", ssid);
+  //Serial.printf("Connecting to %s ", ssid);
   WiFi.setSleepMode(WIFI_NONE_SLEEP);
   if (WiFi.getAutoConnect() != true) WiFi.setAutoConnect(true);
   WiFi.setAutoReconnect(true);
@@ -76,26 +76,28 @@ void setup()
   WiFi.begin(ssid, password);
   //WiFi.config(ip, gateway, subnet);
   
-  //wifi_set_macaddr(0, const_cast<uint8*>(mac));
-  matrix.drawPixel(0, 0, LED_ON);
-  matrix.writeDisplay();
-
+  int x, y;
+  float t = 0;
   bool A = LED_ON;
   while (WiFi.status() != WL_CONNECTED)
-  { delay(1000);
-    A = !A;
-    matrix.drawPixel(0, 0, A);
+  { delay(300);
+    t += 0.2;
+    if (t > 6.3) { A = !A; t = 0;}
+    x = round(3.4 + 5 * cos(t));
+    y = round(3.5 + 5 * sin(t));
+    if (x < 0) {x=0;} else if (x>7) {x=7;}
+    if (y < 0) {y=0;} else if (y>7) {y=7;}
+    matrix.drawPixel(x, y, A);
     matrix.writeDisplay();
   }
-  matrix.drawPixel(7, 0, LED_ON);
-  matrix.writeDisplay();
   
   delay(1000);
   IPAddress ipLIP = WiFi.localIP();
   LIP = ipLIP[3];
   
   Udp.begin(localUdpPort+LIP);
-  Serial.printf("Now listening at IP %s, UDP port %d  - %d   \n", WiFi.localIP().toString().c_str(), LIP, localUdpPort+LIP);
+  //Serial.printf("Now listening at IP %s, UDP port %d  - %d   \n", WiFi.localIP().toString().c_str(), LIP, localUdpPort+LIP);
+  pinMode(13, OUTPUT);
 }
 
 
@@ -105,7 +107,7 @@ void setup()
 
 void reconnectWifi() {
   WiFi.begin(ssid, password);
-  Serial.printf("RECONECT");
+  //Serial.printf("RECONECT");
 
 }
 
@@ -114,7 +116,7 @@ void reconnectWifi() {
 void loop()
 { 
   //bool A = LED_ON;
-  
+  matrix.clear();
   int packetSize = Udp.parsePacket();
   //Serial.print("IP "); 
   //Serial.println(String((WiFi.localIP())[3]));
@@ -129,21 +131,24 @@ void loop()
 //    Serial.println(myData);
     if (myData == CAM_COD[NUMBER]) {
       
-         matrix.clear();
+         
          matrix.drawBitmap(0, 0, BMP, 8, 8, LED_ON);
          matrix.writeDisplay();
          //STAT = !STAT;
-        
+         digitalWrite(13, LOW);
       }
     else {
       matrix.clear();
       matrix.writeDisplay();
       //STAT = !STAT;
+      digitalWrite(13, HIGH);
       
     }
-
+    
+    ERR = 0;
 
     if (WiFi.status() != WL_CONNECTED){
+      
       matrix.drawPixel(0, 0, LED_ON);
       matrix.writeDisplay();
       WiFi.mode(WIFI_STA);
@@ -152,6 +157,14 @@ void loop()
       WiFi.begin(ssid, password);
       delay(300);
       }
+  }
+  else
+  {
+    ERR += 1;
+    if (ERR > 2000) {
+      ESP.restart();
+    
+    }
   }
   delay(30);
 }
